@@ -32,3 +32,14 @@ void ledOn(int pin, int state)
     else
         set_pin_gpio(GPIOE_REG, pin);
 }
+
+
+void led_timed_blink(uint8_t pin, int times, int period_ms)
+{
+    for (int i = 0; i < times; ++i) {
+        ledOn(pin, 1);
+        delay_timer(period_ms / 2);
+        ledOn(pin, 0);
+        delay_timer(period_ms / 2);
+    }
+}

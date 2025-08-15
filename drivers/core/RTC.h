@@ -59,22 +59,22 @@ typedef struct
 // rs - read, set bit
 // t - switch bit
 
-#define RTC_ICR_RECALPF (0x1 << 16)
-#define RTC_ICR_TAMP2F (0x1 << 14)
-#define RTC_ICR_TAMP1F (0x1 << 13)
-#define RTC_ICR_TSOF (0x1 << 12)
-#define RTC_ICR_TSF (0x1 << 11)
-#define RTC_ICR_WUTF (0x1 << 10)
-#define RTC_ICR_ALRBF (0x1 << 9)
-#define RTC_ICR_ALRAF (0x1 << 8)
-#define RTC_ICR_INIT (0x1 << 7)
-#define RTC_ICR_INITF (0x1 << 6)
-#define RTC_ICR_RSF (0x1 << 5)
-#define RTC_ICR_INITS (0x1 << 4)
-#define RTC_ICR_SHPF (0x1 << 3)
-#define RTC_ICR_WUTWF (0x1 << 2)
-#define RTC_ICR_ALRBWF (0x1 << 1)
-#define RTC_ICR_alrawf (0x1 << 0)
+#define RTC_ISR_RECALPF (0x1 << 16)
+#define RTC_ISR_TAMP2F (0x1 << 14)
+#define RTC_ISR_TAMP1F (0x1 << 13)
+#define RTC_ISR_TSOF (0x1 << 12)
+#define RTC_ISR_TSF (0x1 << 11)
+#define RTC_ISR_WUTF (0x1 << 10)
+#define RTC_ISR_ALRBF (0x1 << 9)
+#define RTC_ISR_ALRAF (0x1 << 8)
+#define RTC_ISR_INIT (0x1 << 7)
+#define RTC_ISR_INITF (0x1 << 6)
+#define RTC_ISR_RSF (0x1 << 5)
+#define RTC_ISR_INITS (0x1 << 4)
+#define RTC_ISR_SHPF (0x1 << 3)
+#define RTC_ISR_WUTWF (0x1 << 2)
+#define RTC_ISR_ALRBWF (0x1 << 1)
+#define RTC_ISR_alrawf (0x1 << 0)
 
 // PREP
 

@@ -19,10 +19,70 @@ int init_board();
 void init_uart();
 int usart_adapter(const char *data, int length);
 
-void sw1_pressed(void);
-void sw2_pressed(void);
-void sw3_pressed(void);
+
+static void sw1_pressed_isr();
+static void sw2_pressed_isr();
+static void sw3_pressed_isr();
 void init_buttons_callbacks();
+
+
+static volatile uint8_t g_evt_set_datetime = 0;
+static volatile uint8_t g_evt_set_time     = 0;
+static volatile uint8_t g_evt_set_date     = 0;
+
+void process_button_events()
+{
+    if (g_evt_set_datetime) {
+        g_evt_set_datetime = 0;
+
+        RTC_DateTime_Type datetime = {
+            .date = {
+                .day   = 24,
+                .month = 2,
+                .week  = MONDAY,
+                .year  = 2025,
+            },
+            .time = {.hour = 10, .minute = 50, .seconds = 0}
+        };
+
+        if (set_datetime_rtc(&datetime) == 0) {
+            LOG_INFO("[BTN] Set full datetime -> %04d-%02d-%02d (w=%d) %02d:%02d:%02d",
+                     datetime.date.year, datetime.date.month, datetime.date.day, datetime.date.week,
+                     datetime.time.hour, datetime.time.minute, datetime.time.seconds);
+            led_timed_blink(15, 1, 120);  // OK: зелёный/средний
+        } else {
+            LOG_INFO("[BTN] Failed to set datetime");
+            led_timed_blink(13, 2, 120);  // ERR: красный
+        }
+    }
+
+    if (g_evt_set_time) {
+        g_evt_set_time = 0;
+
+        RTC_Time_Type time = {.hour = 7, .minute = 20, .seconds = 0};
+        if (set_time_rtc(&time) == 0) {
+            LOG_INFO("[BTN] Set time -> %02d:%02d:%02d", time.hour, time.minute, time.seconds);
+            led_timed_blink(15, 1, 120);
+        } else {
+            LOG_INFO("[BTN] Failed to set time");
+            led_timed_blink(13, 2, 120);
+        }
+    }
+
+    if (g_evt_set_date) {
+        g_evt_set_date = 0;
+
+        RTC_Date_Type date = {.year = 2025, .month = 8, .day = 15, .week = FRIDAY};
+        if (set_date_rtc(&date) == 0) {
+            LOG_INFO("[BTN] Set date -> %04d-%02d-%02d (w=%d)", date.year, date.month, date.day, date.week);
+            led_timed_blink(15, 1, 120);
+        } else {
+            LOG_INFO("[BTN] Failed to set date");
+            led_timed_blink(13, 2, 120);
+        }
+    }
+}
+
 
 int main()
 {
@@ -36,15 +96,22 @@ int main()
     }
     LOG_INFO("Драйверы запущены");
 
+    init_buttons();
+    init_buttons_callbacks();
+
     while (1)
     {
-        if (get_datetime_rtc(&cur_datetime))
-        {
-            return 0;
-        };
-        LOG_INFO("{{year:%d, month: %d, week: %d, day: %d}; {hour: %d, minute: %d, sec: %d}}",
-                 cur_datetime.date.year, cur_datetime.date.month, cur_datetime.date.month, cur_datetime.date.day,
+         if (get_datetime_rtc(&cur_datetime)) {
+            LOG_INFO("RTC read error");
+            goto error;
+        }
+
+        LOG_INFO("{{year:%d, month:%d, week:%d, day:%d}; {hour:%02d, minute:%02d, sec:%02d}}",
+                 cur_datetime.date.year, cur_datetime.date.month, cur_datetime.date.week, cur_datetime.date.day,
                  cur_datetime.time.hour, cur_datetime.time.minute, cur_datetime.time.seconds);
+
+        process_button_events();
+
         delay_timer(2000);
     }
 
@@ -150,7 +217,7 @@ int init_board()
 
     ledOn(14, 1);
 
-    // init_buttons();
+    // 
 
 
     // status = sd_card_init();
@@ -238,46 +305,14 @@ int sd_card_init()
     return 0;
 }
 
-void sw1_pressed()
-{
-    RTC_DateTime_Type datetime = {
-        .date = {
-            .day = 24,
-            .month = 2,
-            .week = MONDAY,
-            .year = 2025,
-        },
-        .time = {.hour = 10, .minute = 50, .seconds = 00}};
-    
-    set_datetime_rtc(&datetime);
-}
-void sw2_pressed()
-{
-    RTC_Time_Type time = {
-        .hour = 7,
-        .minute = 20,
-        .seconds = 00,
-    };
-
-    set_time_rtc(&time);
-}
-void sw3_pressed()
-{
-
-    RTC_Date_Type date = {
-        .year = 2025,
-        .month = 8,
-        .day = 15,
-        .week = 2
-    };
-    
-    set_date_rtc(&date);
-}
+static void sw1_pressed_isr(void) { g_evt_set_datetime = 1; }
+static void sw2_pressed_isr(void) { g_evt_set_time     = 1; }
+static void sw3_pressed_isr(void) { g_evt_set_date     = 1; }
 
 
 void init_buttons_callbacks(void)
 {
-    register_button_callback(BUTTON_SW1_PIN, sw1_pressed);
-    register_button_callback(BUTTON_SW2_PIN, sw2_pressed);
-    register_button_callback(BUTTON_SW3_PIN, sw3_pressed);
+    register_button_callback(BUTTON_SW1_PIN, sw1_pressed_isr);
+    register_button_callback(BUTTON_SW2_PIN, sw2_pressed_isr);
+    register_button_callback(BUTTON_SW3_PIN, sw3_pressed_isr);
 }

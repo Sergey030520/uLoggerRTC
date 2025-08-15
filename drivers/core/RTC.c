@@ -3,36 +3,34 @@
 #include "gpio.h"
 #include "rcc.h"
 
-
 RTC_Type *RTC = RTC_REG;
 static uint8_t is_sync_date_rtc = 0;
 
 static int rtc_initialized = 0;
 
-
-uint32_t  rtc_get_prer_value();
+uint32_t rtc_get_prer_value();
 void calculate_prescalers_rtc(uint32_t f_ck_rtc, uint32_t *prediv_a, uint32_t *prediv_s);
-
 
 int init_rtc()
 {
     configure_rtc_clock_rcc(RTC_SRC_HSE);
-    
+
     // если память была заблокирована
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
 
-    RTC->ISR |= RTC_ICR_INIT;
-    while (!(RTC->ISR & RTC_ICR_INITF))
+    RTC->ISR |= RTC_ISR_INIT;
+    while (!(RTC->ISR & RTC_ISR_INITF))
         ;
-    RTC->PRER = rtc_get_prer_value(); 
+    RTC->PRER = rtc_get_prer_value();
     // RTC_PREDIV_A(124U) | RTC_PREDIV_S(7999U);
-    
-    RTC->ISR &= ~RTC_ICR_INIT;
-    while (RTC->ISR & RTC_ICR_INITF)
-        ;
 
-    RTC->WPR = 0;
+    RTC->ISR &= ~RTC_ISR_INIT;
+
+    RTC->ISR &= ~RTC_ISR_RSF;
+    while (!(RTC->ISR & RTC_ISR_RSF));
+
+    RTC->WPR = 0xFF;
 
     // PWR->CR &= ~POWER_CR_DBP;
 
@@ -57,19 +55,17 @@ int set_datetime_rtc(RTC_DateTime_Type *datetime)
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
 
-    RTC->ISR |= RTC_ICR_INIT;
-    while (!(RTC->ISR & RTC_ICR_INITF))
+    RTC->ISR |= RTC_ISR_INIT;
+    while (!(RTC->ISR & RTC_ISR_INITF))
         ;
     RTC->PRER = RTC_PREDIV_A(124U) | RTC_PREDIV_S(7999U);
 
     RTC->TR = SET_RTS_HOUR(datetime->time.hour) | SET_RTS_MINUTE(datetime->time.minute) | SET_RTS_SECOND(datetime->time.seconds);
     RTC->DR = SET_RTS_YEAR(year) | SET_RTS_WDU(datetime->date.week) | SET_RTS_MONTH(datetime->date.month) | SET_RTS_DAY(datetime->date.day);
 
-    RTC->ISR &= ~RTC_ICR_INIT;
-    while (RTC->ISR & RTC_ICR_INITF)
-        ;
+    RTC->ISR &= ~RTC_ISR_INIT;
 
-    RTC->WPR = 0;
+    RTC->WPR = 0xFF;
 
     // PWR->CR &= ~POWER_CR_DBP;
 
@@ -89,17 +85,15 @@ int set_time_rtc(RTC_Time_Type *time)
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
 
-    RTC->ISR |= RTC_ICR_INIT;
-    while (!(RTC->ISR & RTC_ICR_INITF))
+    RTC->ISR |= RTC_ISR_INIT;
+    while (!(RTC->ISR & RTC_ISR_INITF))
         ;
-    RTC->PRER = RTC_PREDIV_A(124U) | RTC_PREDIV_S(7999U);
+
     RTC->TR = SET_RTS_HOUR(time->hour) | SET_RTS_MINUTE(time->minute) | SET_RTS_SECOND(time->seconds);
 
-    RTC->ISR &= ~RTC_ICR_INIT;
-    while (RTC->ISR & RTC_ICR_INITF)
-        ;
+    RTC->ISR &= ~RTC_ISR_INIT;
 
-    RTC->WPR = 0;
+    RTC->WPR = 0xFF;
 
     // PWR->CR &= ~POWER_CR_DBP;
 
@@ -119,7 +113,7 @@ int set_date_rts(RTC_Date_Type *date)
         return -2;
     }
 
-    RCC_BusConfig  config = {0};
+    RCC_BusConfig config = {0};
     get_rcc_clock_dividers(&config);
 
     // PWR->CR |= POWER_CR_DBP;
@@ -127,20 +121,16 @@ int set_date_rts(RTC_Date_Type *date)
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
 
-    RTC->ISR |= RTC_ICR_INIT;
-    while (!(RTC->ISR & RTC_ICR_INITF))
+    RTC->ISR |= RTC_ISR_INIT;
+    while (!(RTC->ISR & RTC_ISR_INITF))
         ;
 
-    RTC->PRER = rtc_get_prer_value(config.rtc_prescaler);
-    // RTC->PRER = RTC_PREDIV_A(124U) | RTC_PREDIV_S(7999U);
 
     RTC->DR = SET_RTS_YEAR(date->year) | SET_RTS_WDU(date->week) | SET_RTS_MONTH(date->month) | SET_RTS_DAY(date->day);
 
-    RTC->ISR &= ~RTC_ICR_INIT;
-    while (RTC->ISR & RTC_ICR_INITF)
-        ;
+    RTC->ISR &= ~RTC_ISR_INIT;
 
-    RTC->WPR = 0;
+    RTC->WPR = 0xFF;
 
     // PWR->CR &= ~POWER_CR_DBP;
 
@@ -179,14 +169,14 @@ int get_datetime_rtc(RTC_DateTime_Type *datetime)
     }
     if (is_sync_date_rtc)
     {
-        RTC->ISR &= ~RTC_ICR_RSF;
-        while (!(RTC->ISR & RTC_ICR_RSF))
+        RTC->ISR &= ~RTC_ISR_RSF;
+        while (!(RTC->ISR & RTC_ISR_RSF))
             ;
         is_sync_date_rtc = 0;
     }
     else
     {
-        while (!(RTC->ISR & RTC_ICR_RSF))
+        while (!(RTC->ISR & RTC_ISR_RSF))
             ;
     }
 
