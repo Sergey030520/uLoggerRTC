@@ -8,10 +8,7 @@ typedef struct
 {
     uint32_t MEMRMP;
     uint32_t PMC;
-    uint32_t EXTICR1;
-    uint32_t EXTICR2;
-    uint32_t EXTICR3;
-    uint32_t EXTICR4;
+    uint32_t EXTICRx[4];
     uint32_t CMPCR;
 }SYSCFG_Type;
 
@@ -34,4 +31,4 @@ typedef struct
 
 
 
-void exti_set_port(uint8_t pin, GPIO_Port_t port);
+void exti_set_port(GPIO_Port_t port, uint8_t pin);

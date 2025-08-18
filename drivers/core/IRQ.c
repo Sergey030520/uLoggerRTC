@@ -22,10 +22,10 @@ void init_irq()
 
 void enable_irq_nvic(uint8_t irqn, uint8_t priority)
 {
-    // Устанавливаем приоритет (старшие 4 бита используются)
+    // Устанавливаем приоритет
     NVIC->IPRx[irqn] = (priority & 0xF) << 4;
 
-    // Разрешаем прерывание в ISER
+    // Разрешаем прерывани
     NVIC->ISERx[irqn / 32] = (1UL << (irqn % 32));
 }
 void disable_irq_nvic(uint8_t irqn)
@@ -38,14 +38,13 @@ void disable_irq_nvic(uint8_t irqn)
 
 void configure_gpio_exti(GPIO_Port_t port, uint8_t pin, EXTI_TriggerEdge_t edge, IRQn_Type irqn)
 {
-    // 1. Настраиваем порт в SYSCFG
-    exti_set_port(pin, port);
+    exti_set_port(port, pin);
 
     // 2. Настраиваем фронт/спад
     if (edge == EDGE_RISING || edge == EDGE_BOTH)
-        EXTI->RSTR |= EXTI_RSTRx(pin);
+        EXTI->RTSR |= EXTI_RSTRx(pin);
     else
-        EXTI->RSTR &= ~EXTI_RSTRx(pin);
+        EXTI->RTSR &= ~EXTI_RSTRx(pin);
 
     if (edge == EDGE_FALLING || edge == EDGE_BOTH)
         EXTI->FTSR |= EXTI_FTSRx(pin);
@@ -54,7 +53,7 @@ void configure_gpio_exti(GPIO_Port_t port, uint8_t pin, EXTI_TriggerEdge_t edge,
 
     // 3. Разрешаем прерывание и сбрасываем флаг
     EXTI->IMR |= EXTI_IMRx(pin);
-    EXTI->PR  |= EXTI_PRx(pin);
+    EXTI->PR  = EXTI_PRx(pin);
 
     // 4. Разрешаем NVIC для соответствующего IRQ
     enable_irq_nvic(irqn, 5);

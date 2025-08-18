@@ -19,70 +19,80 @@ int init_board();
 void init_uart();
 int usart_adapter(const char *data, int length);
 
+void print_clock_frequencies();
 
 static void sw1_pressed_isr();
 static void sw2_pressed_isr();
 static void sw3_pressed_isr();
 void init_buttons_callbacks();
 
-
 static volatile uint8_t g_evt_set_datetime = 0;
-static volatile uint8_t g_evt_set_time     = 0;
-static volatile uint8_t g_evt_set_date     = 0;
+static volatile uint8_t g_evt_set_time = 0;
+static volatile uint8_t g_evt_set_date = 0;
 
 void process_button_events()
 {
-    if (g_evt_set_datetime) {
+    if (g_evt_set_datetime)
+    {
         g_evt_set_datetime = 0;
 
         RTC_DateTime_Type datetime = {
             .date = {
-                .day   = 24,
+                .day = 24,
                 .month = 2,
-                .week  = MONDAY,
-                .year  = 2025,
+                .week = MONDAY,
+                .year = 2025,
             },
-            .time = {.hour = 10, .minute = 50, .seconds = 0}
-        };
+            .time = {.hour = 10, .minute = 50, .seconds = 0}};
 
-        if (set_datetime_rtc(&datetime) == 0) {
+        if (set_datetime_rtc(&datetime) == 0)
+        {
             LOG_INFO("[BTN] Set full datetime -> %04d-%02d-%02d (w=%d) %02d:%02d:%02d",
                      datetime.date.year, datetime.date.month, datetime.date.day, datetime.date.week,
                      datetime.time.hour, datetime.time.minute, datetime.time.seconds);
-            led_timed_blink(15, 1, 120);  // OK: зелёный/средний
-        } else {
+            led_timed_blink(15, 1, 120);
+        }
+        else
+        {
             LOG_INFO("[BTN] Failed to set datetime");
-            led_timed_blink(13, 2, 120);  // ERR: красный
+            led_timed_blink(13, 2, 120);
         }
     }
 
-    if (g_evt_set_time) {
+    if (g_evt_set_time)
+    {
         g_evt_set_time = 0;
 
         RTC_Time_Type time = {.hour = 7, .minute = 20, .seconds = 0};
-        if (set_time_rtc(&time) == 0) {
+        if (set_time_rtc(&time) == 0)
+        {
             LOG_INFO("[BTN] Set time -> %02d:%02d:%02d", time.hour, time.minute, time.seconds);
             led_timed_blink(15, 1, 120);
-        } else {
+        }
+        else
+        {
             LOG_INFO("[BTN] Failed to set time");
             led_timed_blink(13, 2, 120);
         }
     }
 
-    if (g_evt_set_date) {
+    if (g_evt_set_date)
+    {
         g_evt_set_date = 0;
 
         RTC_Date_Type date = {.year = 2025, .month = 8, .day = 15, .week = FRIDAY};
-        if (set_date_rtc(&date) == 0) {
+        if (set_date_rtc(&date) == 0)
+        {
             LOG_INFO("[BTN] Set date -> %04d-%02d-%02d (w=%d)", date.year, date.month, date.day, date.week);
             led_timed_blink(15, 1, 120);
-        } else {
+        }
+        else
+        {
             LOG_INFO("[BTN] Failed to set date");
             led_timed_blink(13, 2, 120);
         }
     }
 }
-
 
 int main()
 {
@@ -94,6 +104,7 @@ int main()
         ledOn(13, 1);
         goto error;
     }
+    print_clock_frequencies();
     LOG_INFO("Драйверы запущены");
 
     init_buttons();
@@ -112,7 +123,7 @@ int main()
 
         process_button_events();
 
-        delay_timer(2000);
+        delay_timer(3000);
     }
 
 error:
@@ -177,7 +188,7 @@ int init_rcc()
 
     peripheral_conf.APB1 = RCC_APB1ENR_TIM2EN | RCC_APB1ENR_PWREN;
     peripheral_conf.APB2 = RCC_APB2ENR_USART1EN | RCC_APB2ENR_SYSCFGEN;
-    peripheral_conf.AHB1 = RCC_AHB1ENR_DMA2EN | RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOEEN | RCC_AHB1ENR_BKPSRAMEN; 
+    peripheral_conf.AHB1 = RCC_AHB1ENR_DMA2EN | RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOEEN | RCC_AHB1ENR_BKPSRAMEN;
     peripheral_conf.AHB2 = 0;
     peripheral_conf.AHB3 = 0;
 
@@ -204,30 +215,17 @@ int init_board()
         return -1;
     }
 
+    timer_init();
+
     init_uart();
 
     stm_init_log(usart_adapter);
 
-    ledOn(15, 1);
     status = init_rtc();
     if (status != 0)
     {
         return -2;
     }
-
-    ledOn(14, 1);
-
-    // 
-
-
-    // status = sd_card_init();
-
-    // if (status != 0)
-    // {
-    //     ledOn(13, 1);
-    //     LOG_INFO("Error launch Driver sd: %d", status);
-    //     return -2;
-    // }
 
     return 0;
 }
@@ -305,10 +303,20 @@ int sd_card_init()
     return 0;
 }
 
-static void sw1_pressed_isr(void) { g_evt_set_datetime = 1; }
-static void sw2_pressed_isr(void) { g_evt_set_time     = 1; }
-static void sw3_pressed_isr(void) { g_evt_set_date     = 1; }
+void print_clock_frequencies()
+{
+    RCC_Frequencies freq = {0};
+    get_clock_frequencies(&freq);
 
+    LOG_INFO("SYSCLK: %lu Hz", freq.SYSCLK_Freq);
+    LOG_INFO("HCLK  : %lu Hz", freq.HCLK_Freq);
+    LOG_INFO("APB1  : %lu Hz", freq.APB1_Freq);
+    LOG_INFO("APB2  : %lu Hz", freq.APB2_Freq);
+}
+
+static void sw1_pressed_isr(void) { g_evt_set_datetime = 1; }
+static void sw2_pressed_isr(void) { g_evt_set_time = 1; }
+static void sw3_pressed_isr(void) { g_evt_set_date = 1; }
 
 void init_buttons_callbacks(void)
 {

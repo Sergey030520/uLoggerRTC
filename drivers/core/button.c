@@ -1,6 +1,8 @@
 #include "button.h"
 #include "board_pins.h"
 #include "IRQ.h"
+#include "led.h"
+
 
 #define MAX_BUTTONS 3
 static ButtonCallback_t button_callbacks[MAX_BUTTONS] = {0};
@@ -20,17 +22,16 @@ void init_buttons()
     {
         pin_conf.pin = pin_btn;
         set_gpio_conf(&pin_conf);
+        configure_gpio_exti(GPIO_PORT_E, pin_btn, EDGE_FALLING, EXTI15_10_IRQn);
     }
-
-    configure_gpio_exti(BUTTON_GPIO_PORT, BUTTON_SW1_PIN, EDGE_FALLING, EXTI15_10_IRQn);
-    configure_gpio_exti(BUTTON_GPIO_PORT, BUTTON_SW2_PIN, EDGE_FALLING, EXTI15_10_IRQn);
-    configure_gpio_exti(BUTTON_GPIO_PORT, BUTTON_SW3_PIN, EDGE_FALLING, EXTI15_10_IRQn);
 }
 
 void register_button_callback(uint8_t button_pin, ButtonCallback_t cb)
 {
-    if (button_pin < MAX_BUTTONS)
-        button_callbacks[button_pin] = cb;
+    if (button_pin >= BUTTON_SW1_PIN && button_pin <= BUTTON_SW3_PIN)
+    {
+        button_callbacks[button_pin - BUTTON_SW1_PIN] = cb; 
+    }
 }
 
 void handle_button_interrupt(uint8_t button_pin)
@@ -43,7 +44,7 @@ void handle_button_interrupt(uint8_t button_pin)
     }
 }
 
-void EXTI15_10_IRQHandler(void)
+void EXTI15_10_IRQHandler()
 {
     for (uint8_t pin = BUTTON_SW1_PIN; pin <= BUTTON_SW3_PIN; ++pin)
     {

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "pwr.h": "c",
+        "memory_map.h": "c"
+    }
+}
