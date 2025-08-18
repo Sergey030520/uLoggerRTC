@@ -169,7 +169,7 @@ typedef struct
 
 int init_rtc();
 int set_time_rtc(RTC_Time_Type *date);
-int set_date_rts(RTC_Date_Type *date);
+int set_date_rtc(RTC_Date_Type *date);
 int set_datetime_rtc(RTC_DateTime_Type *datetime);
 
 int get_datetime_rtc(RTC_DateTime_Type *datetime);

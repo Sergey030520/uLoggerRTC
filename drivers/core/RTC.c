@@ -2,6 +2,8 @@
 #include "memory_map.h"
 #include "gpio.h"
 #include "rcc.h"
+#include "timer.h"
+
 
 RTC_Type *RTC = RTC_REG;
 static uint8_t is_sync_date_rtc = 0;
@@ -11,9 +13,18 @@ static int rtc_initialized = 0;
 uint32_t rtc_get_prer_value();
 void calculate_prescalers_rtc(uint32_t f_ck_rtc, uint32_t *prediv_a, uint32_t *prediv_s);
 
+
+
+void rtc_wait_sync(void)
+{
+    RTC->ISR &= ~RTC_ISR_RSF;
+    while (!(RTC->ISR & RTC_ISR_RSF));
+    is_sync_date_rtc = 1;
+}
+
 int init_rtc()
 {
-    configure_rtc_clock_rcc(RTC_SRC_HSE);
+    if(configure_rtc_clock_rcc(RTC_SRC_HSE)!= 0) return -1;
 
     // если память была заблокирована
     RTC->WPR = 0xCA;
@@ -22,19 +33,18 @@ int init_rtc()
     RTC->ISR |= RTC_ISR_INIT;
     while (!(RTC->ISR & RTC_ISR_INITF))
         ;
+    
     RTC->PRER = rtc_get_prer_value();
-    // RTC_PREDIV_A(124U) | RTC_PREDIV_S(7999U);
 
     RTC->ISR &= ~RTC_ISR_INIT;
 
     RTC->ISR &= ~RTC_ISR_RSF;
     while (!(RTC->ISR & RTC_ISR_RSF));
 
+    rtc_wait_sync();
+
     RTC->WPR = 0xFF;
 
-    // PWR->CR &= ~POWER_CR_DBP;
-
-    is_sync_date_rtc = 1;
     rtc_initialized = 1;
     return 0;
 }
@@ -50,7 +60,6 @@ int set_datetime_rtc(RTC_DateTime_Type *datetime)
     {
         return -2;
     }
-    // PWR->CR |= POWER_CR_DBP;
 
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
@@ -58,7 +67,6 @@ int set_datetime_rtc(RTC_DateTime_Type *datetime)
     RTC->ISR |= RTC_ISR_INIT;
     while (!(RTC->ISR & RTC_ISR_INITF))
         ;
-    RTC->PRER = RTC_PREDIV_A(124U) | RTC_PREDIV_S(7999U);
 
     RTC->TR = SET_RTS_HOUR(datetime->time.hour) | SET_RTS_MINUTE(datetime->time.minute) | SET_RTS_SECOND(datetime->time.seconds);
     RTC->DR = SET_RTS_YEAR(year) | SET_RTS_WDU(datetime->date.week) | SET_RTS_MONTH(datetime->date.month) | SET_RTS_DAY(datetime->date.day);
@@ -67,9 +75,8 @@ int set_datetime_rtc(RTC_DateTime_Type *datetime)
 
     RTC->WPR = 0xFF;
 
-    // PWR->CR &= ~POWER_CR_DBP;
-
-    is_sync_date_rtc = 1;
+    rtc_wait_sync();
+    
     return 0;
 }
 
@@ -79,8 +86,6 @@ int set_time_rtc(RTC_Time_Type *time)
     {
         return -1;
     }
-
-    // PWR->CR |= POWER_CR_DBP;
 
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
@@ -94,14 +99,13 @@ int set_time_rtc(RTC_Time_Type *time)
     RTC->ISR &= ~RTC_ISR_INIT;
 
     RTC->WPR = 0xFF;
-
-    // PWR->CR &= ~POWER_CR_DBP;
-
-    is_sync_date_rtc = 1;
+    
+    rtc_wait_sync();
+    
     return 0;
 }
 
-int set_date_rts(RTC_Date_Type *date)
+int set_date_rtc(RTC_Date_Type *date)
 {
     if (date == 0)
     {
@@ -115,8 +119,6 @@ int set_date_rts(RTC_Date_Type *date)
 
     RCC_BusConfig config = {0};
     get_rcc_clock_dividers(&config);
-
-    // PWR->CR |= POWER_CR_DBP;
 
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
@@ -132,53 +134,35 @@ int set_date_rts(RTC_Date_Type *date)
 
     RTC->WPR = 0xFF;
 
-    // PWR->CR &= ~POWER_CR_DBP;
-
-    is_sync_date_rtc = 1;
+    rtc_wait_sync();
 
     return 0;
 }
 
 int get_date_rts(RTC_Date_Type *date)
 {
-    if (date == 0 || rtc_initialized == 0)
-        return 0;
+    if (!date || !rtc_initialized) return -1;
     RTC_DateTime_Type datetime;
-    if (get_datetime_rtc(&datetime))
-        return -1;
+    if (get_datetime_rtc(&datetime)) return -1;
+    *date = datetime.date;
     return 0;
 }
 
 int get_time_rts(RTC_Time_Type *time)
 {
-    if (time == 0 || rtc_initialized == 0)
-    {
-        return 0;
-    }
+    if (!time || !rtc_initialized) return -1;
     RTC_DateTime_Type datetime;
-    if (get_datetime_rtc(&datetime))
-        return -1;
+    if (get_datetime_rtc(&datetime)) return -1;
+    *time = datetime.time;
     return 0;
 }
 
 int get_datetime_rtc(RTC_DateTime_Type *datetime)
 {
-    if (datetime == 0 || rtc_initialized == 0)
-    {
-        return 0;
-    }
-    if (is_sync_date_rtc)
-    {
-        RTC->ISR &= ~RTC_ISR_RSF;
-        while (!(RTC->ISR & RTC_ISR_RSF))
-            ;
-        is_sync_date_rtc = 0;
-    }
-    else
-    {
-        while (!(RTC->ISR & RTC_ISR_RSF))
-            ;
-    }
+    if (!datetime || !rtc_initialized) return -1;
+
+    if (!is_sync_date_rtc)
+        rtc_wait_sync();
 
     datetime->time.hour = GET_RTS_HOUR(RTC->TR);
     datetime->time.minute = GET_RTS_MINUTE(RTC->TR);
