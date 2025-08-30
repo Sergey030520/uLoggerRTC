@@ -2,7 +2,7 @@
 #include "memory_map.h"
 #include "rcc.h"
 
-void init_timer()
+void timer_init()
 {
     RCC_Frequencies rcc_clocks = {0};
     RCC_BusConfig rcc_config = {0};

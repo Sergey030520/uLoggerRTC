@@ -401,11 +401,11 @@ int init_sd()
     if (status == 0)
     {
         SD.version = CARD_V2_X;
-        LOG_INFO("supported VHS!");
+        LOG_INFO("supported VHS!\r\n");
     }
     else if (status == ERROR_WAIT_TIME)
     {
-        LOG_INFO("unsupported VHS!");
+        LOG_INFO("unsupported VHS!\r\n");
         SD.version = CARD_V1_X;
 
         status = reset_sd();
@@ -579,7 +579,7 @@ int load_csd_sd()
         uint32_t mult = math_pow(2, (uint32_t)csd.C_SIZE_MULT);
         SD.max_size = ((csd.C_SIZE + 1) * mult) * block_len;
 
-        LOG_INFO("VDD_W_CURR_MIN: %x, VDD_R_CURR_MIN: %x,", csd.VDD_W_CURR_MIN, csd.VDD_R_CURR_MIN);
+        LOG_INFO("VDD_W_CURR_MIN: %x, VDD_R_CURR_MIN: %x,\r\n", csd.VDD_W_CURR_MIN, csd.VDD_R_CURR_MIN);
         LOG_INFO("VDD_W_CURR_MIN: %x, VDD_R_CURR_MIN: %x,", csd.VDD_W_CURR_MAX, csd.VDD_R_CURR_MAX);
         LOG_INFO("WRITE_BL_LEN: %x, READ_BL_LEN: %x", csd.WRITE_BL_LEN, csd.READ_BL_LEN);
         LOG_INFO("C_SIZE_MULT: %d, C_SIZE: %d", csd.C_SIZE_MULT, csd.C_SIZE);
@@ -590,13 +590,13 @@ int load_csd_sd()
     {
         SD.max_size = (csd.C_SIZE + 1) * (512 * 1024);
         LOG_INFO("WRITE_BL_LEN: %d, READ_BL_LEN: %x", csd.WRITE_BL_LEN, csd.READ_BL_LEN);
-        LOG_INFO("SD capacity: %d", SD.max_size);
+        LOG_INFO("SD capacity: %d\r\n", SD.max_size);
         LOG_INFO("C_SIZE: %d, ", csd.C_SIZE);
         LOG_INFO("COPY: %x, file format: %x,", csd.COPY, csd.FILE_FORMAT);
     }
     else
     {
-        LOG_INFO("Stnadart CSD version > 2 unsupported!");
+        LOG_INFO("Stnadart CSD version > 2 unsupported!\r\n");
         return WARNING_CSD_UNSUPPORTED_VERSION;
     }
 

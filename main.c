@@ -54,7 +54,7 @@ void process_button_events()
         }
         else
         {
-            LOG_INFO("[BTN] Failed to set datetime");
+            LOG_INFO("[BTN] Failed to set datetime\r\n");
             led_timed_blink(13, 2, 120);
         }
     }
@@ -71,7 +71,7 @@ void process_button_events()
         }
         else
         {
-            LOG_INFO("[BTN] Failed to set time");
+            LOG_INFO("[BTN] Failed to set time\r\n");
             led_timed_blink(13, 2, 120);
         }
     }
@@ -83,12 +83,12 @@ void process_button_events()
         RTC_Date_Type date = {.year = 2025, .month = 8, .day = 15, .week = FRIDAY};
         if (set_date_rtc(&date) == 0)
         {
-            LOG_INFO("[BTN] Set date -> %04d-%02d-%02d (w=%d)", date.year, date.month, date.day, date.week);
+            LOG_INFO("[BTN] Set date -> %04d-%02d-%02d (w=%d)\r\n", date.year, date.month, date.day, date.week);
             led_timed_blink(15, 1, 120);
         }
         else
         {
-            LOG_INFO("[BTN] Failed to set date");
+            LOG_INFO("[BTN] Failed to set date\r\n");
             led_timed_blink(13, 2, 120);
         }
     }
@@ -98,14 +98,14 @@ int main()
 {
     int status = init_board();
     RTC_DateTime_Type cur_datetime;
-
+ 
     if (status != 0)
     {
         ledOn(13, 1);
         goto error;
     }
     print_clock_frequencies();
-    LOG_INFO("Драйверы запущены");
+    LOG_INFO("Драйверы запущены\r\n");
 
     init_buttons();
     init_buttons_callbacks();
@@ -113,7 +113,7 @@ int main()
     while (1)
     {
          if (get_datetime_rtc(&cur_datetime)) {
-            LOG_INFO("RTC read error");
+            LOG_INFO("RTC read error\r\n");
             goto error;
         }
 
