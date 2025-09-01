@@ -17,9 +17,11 @@
 1. [Описание](#description_project)
 2. [Основные возможности](#features_project)
 3. [Работа с кнопками](#button_events)
-4. [Сборка проекта](#build_project)
-5. [Загрузка на плату](#flash_to_board)
-6. [Пример работы](#example_work_project)
+4. [UART Middleware](#uart_middleware)
+5. [Сборка проекта](#build_project)
+6. [Загрузка на плату](#flash_to_board)
+7. [Пример работы](#example_work_project)
+8. [Пример вывода (Log Output)](#log_output)
 
 ## Описание <a name="description_project"></a>
 
@@ -72,6 +74,25 @@ make
 ```
 Проект был протестирован на STM32F407VET6 с SD-картой 8GB. Все операции чтения/записи корректны.
 
+## UART Middleware <a name="uart_middleware"></a>
+
+Файл `middleware/usart_board.c` содержит функцию:
+
+```
+void init_uart();
+```
+Эта функция выполняет конфигурацию USART1 и всех основных параметров UART:
+
+Настройка TX/RX пинов.
+
+Включение DMA для передачи данных.
+
+Установка скорости передачи по умолчанию 115200 бод.
+
+Используется для логирования всех событий через LOG_INFO, LOG_ERROR, LOG_DEBUG, LOG_WARNING.
+
+Таким образом, UART инициализируется при старте системы через вызов init_board().
+
 ## Загрузка на плату <a name="flash_to_board"></a>
 
 На Linux перед загрузкой прошивки необходимо установить утилиту `st-flash`:
@@ -122,4 +143,31 @@ error:
     while (1)
         ;
     return 0;
+```
+## Пример вывода (Log Output) <a name="log_output"></a>
+
+Ниже приведён пример вывода логов из UART.  
+
+- Строки вида `[main.c:120] {{...}}` — это текущее состояние RTC (год, месяц, неделя, день, часы, минуты, секунды).  
+- Строки с префиксом `[BTN]` означают **нажатие кнопки**, после которого обновляется дата или время.  
+
+### Соответствие кнопок:
+- **Кнопка 1** → установка полной даты и времени.  
+- **Кнопка 2** → установка только времени.  
+- **Кнопка 3** → установка только даты.  
+
+### Пример логов:
+```
+[main.c:120] {{year:1980, month:1, week:1, day:1}; {hour:00, minute:00, sec:03}}
+[main.c:120] {{year:1980, month:1, week:1, day:1}; {hour:00, minute:00, sec:04}}
+[main.c:120] {{year:1980, month:1, week:1, day:1}; {hour:00, minute:00, sec:04}}
+[main.c:120] {{year:1980, month:1, week:1, day:1}; {hour:00, minute:00, sec:05}}
+[main.c:120] {{year:1980, month:1, week:1, day:1}; {hour:00, minute:00, sec:06}}
+[main.c:86] [BTN] Set date -> 2025-08-15 (w=1)
+[main.c:120] {{year:2085, month:8, week:41, day:15}; {hour:00, minute:00, sec:06}}
+[main.c:120] {{year:2085, month:8, week:41, day:15}; {hour:00, minute:00, sec:07}}
+[main.c:69] [BTN] Set time -> 07:20:00[main.c:120] {{year:2085, month:8, week:41, day:15}; {hour:07, minute:20, sec:00}}
+[main.c:120] {{year:2085, month:8, week:41, day:15}; {hour:07, minute:20, sec:01}}
+[main.c:50] [BTN] Set full datetime -> 2025-02-24 (w=1) 10:50:00
+[main.c:120] {{year:2025, month:2, week:41, day:24}; {hour:10, minute:50, sec:00}}
 ```
