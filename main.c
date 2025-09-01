@@ -47,7 +47,7 @@ void process_button_events()
 
         if (set_datetime_rtc(&datetime) == 0)
         {
-            LOG_INFO("[BTN] Set full datetime -> %04d-%02d-%02d (w=%d) %02d:%02d:%02d",
+            LOG_INFO("[BTN] Set full datetime -> %04d-%02d-%02d (w=%d) %02d:%02d:%02d\r\n",
                      datetime.date.year, datetime.date.month, datetime.date.day, datetime.date.week,
                      datetime.time.hour, datetime.time.minute, datetime.time.seconds);
             led_timed_blink(15, 1, 120);
@@ -117,7 +117,7 @@ int main()
             goto error;
         }
 
-        LOG_INFO("{{year:%d, month:%d, week:%d, day:%d}; {hour:%02d, minute:%02d, sec:%02d}}",
+        LOG_INFO("{{year:%d, month:%d, week:%d, day:%d}; {hour:%02d, minute:%02d, sec:%02d}}\r\n",
                  cur_datetime.date.year, cur_datetime.date.month, cur_datetime.date.week, cur_datetime.date.day,
                  cur_datetime.time.hour, cur_datetime.time.minute, cur_datetime.time.seconds);
 
